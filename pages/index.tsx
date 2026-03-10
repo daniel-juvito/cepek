@@ -505,7 +505,7 @@ const Home: React.FC = () => {
                 <li>Setiap pemain mendapatkan 2 kartu di awal.</li>
                 <li>Pada giliranmu, pilih kartu untuk dimainkan (<strong>Play</strong>) atau dibuang (<strong>Discard</strong>).</li>
                 <li><strong>Play:</strong> Tambahkan angka kartu ke total akumulasi dan ambil kartu baru dari deck.</li>
-                <li><strong>Discard:</strong> Jika kartu membuat total > 100, buang kartu tersebut <strong>tanpa mengambil kartu baru</strong>.</li>
+                <li><strong>Discard:</strong> Jika kartu membuat total {'>'} 100, buang kartu tersebut <strong>tanpa mengambil kartu baru</strong>.</li>
                 <li>Pemain yang kehabisan kartu dianggap <strong>OUT</strong>.</li>
                 <li>Pemain terakhir yang bertahan adalah pemenangnya!</li>
               </ul>

@@ -55,6 +55,29 @@ Kamu bisa menjalankan game ini menggunakan Docker agar lebih praktis:
    ```
 Akses game di `http://localhost:3000`.
 
+## 🌐 Cara Online-kan Game (Deployment)
+
+Karena game ini menggunakan **Socket.io** dengan **Custom Server**, ada beberapa cara untuk online:
+
+### 1. Menggunakan VPS (Docker)
+Ini cara paling stabil:
+- Sewa VPS (DigitalOcean, AWS, GCP, atau provider lokal).
+- Install Docker di VPS.
+- Upload folder project atau clone dari Git.
+- Jalankan perintah Docker di atas.
+- Buka port 3000 di firewall VPS.
+
+### 2. Menggunakan PaaS (Railway / Render)
+Platform ini otomatis mendeteksi Dockerfile:
+- Push project ini ke GitHub.
+- Hubungkan akun GitHub ke [Railway.app](https://railway.app) atau [Render.com](https://render.com).
+- Pilih project `cepek`.
+- Set environment variable `PORT=3000` (jika diperlukan).
+- Deploy! Platform akan memberikan URL publik (misal: `game-cepe.up.railway.app`).
+
+### 3. Penting: Vercel (Layanan Gratis Terpopuler)
+**Catatan Penting**: Vercel secara default **tidak mendukung** WebSocket/Socket.io secara permanen (Serverless). Jadi, game online tidak akan jalan jika di-deploy ke Vercel biasa. Gunakan cara 1 atau 2 di atas agar fitur online lancar.
+
 ### Perintah Lainnya
 - **Mode Development**: `npm run dev` (di folder utama)
 - **Mode Terminal**: `npm run terminal` (di folder utama)

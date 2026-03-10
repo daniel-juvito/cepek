@@ -57,6 +57,12 @@ Akses game di `http://localhost:3000`.
 
 ## 🌐 Cara Online-kan Game (Deployment)
 
+Untuk men-deploy ke GitHub kamu (`daniel-juvito/cepek.git`), jalankan perintah ini di terminal kamu:
+```bash
+git remote add origin https://github.com/daniel-juvito/cepek.git
+git push -u origin master
+```
+
 Karena game ini menggunakan **Socket.io** dengan **Custom Server**, ada beberapa cara untuk online:
 
 ### 1. Menggunakan VPS (Docker)

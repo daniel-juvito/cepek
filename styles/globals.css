@@ -255,3 +255,50 @@ button.primary:hover {
     background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,255,255,0.05) 10px, rgba(255,255,255,0.05) 20px);
     color: transparent;
 }
+
+.help-icon {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+}
+
+.help-icon:hover {
+    color: #ffcc00;
+    background: transparent;
+}
+
+.how-to-play-modal {
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: left;
+}
+
+.how-to-play-content h3 {
+    margin-top: 20px;
+    color: #ffcc00;
+    border-bottom: 1px solid #444;
+    padding-bottom: 5px;
+}
+
+.how-to-play-content ul {
+    padding-left: 20px;
+}
+
+.how-to-play-content li {
+    margin-bottom: 8px;
+}
+
+.special-cards-list li {
+    list-style: none;
+    background: #1a1a1a;
+    padding: 8px 12px;
+    border-radius: 5px;
+    margin-bottom: 5px;
+}

@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node server.ts",
-    "build": "next build",
-    "start": "NODE_ENV=production ts-node server.ts"
+    "build": "next build && npx tsc server.ts --outDir dist --esModuleInterop --module commonjs --target es2016 --skipLibCheck",
+    "start": "NODE_ENV=production node dist/server.js",
+    "terminal": "ts-node src/index.ts"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

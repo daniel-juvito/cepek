@@ -36,6 +36,7 @@ const Home: React.FC = () => {
   const [specialChoice, setSpecialChoice] = useState<{ card: Card; type: 'ADJ' | '7' } | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
   const [showPassScreen, setShowPassScreen] = useState(false);
+  const [showHowToPlay, setShowHowToPlay] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
   const [deckCards, setDeckCards] = useState<Card[]>([]);
   const [myId, setMyId] = useState<string>('');
@@ -292,6 +293,9 @@ const Home: React.FC = () => {
   if (gameState === 'SETUP' && !mode) {
     return (
       <div className="setup-screen">
+        <button className="help-icon" onClick={() => setShowHowToPlay(true)}>
+          <HelpCircle size={32} />
+        </button>
         <div className="setup-form">
           <h1>Game Cepe</h1>
           <div className="mode-selection">
@@ -389,6 +393,9 @@ const Home: React.FC = () => {
       </Head>
       <div className="header-info">
           <div className="room-info">{mode === 'ONLINE' ? `Room: ${roomId}` : 'Mode: Lokal'}</div>
+          <button className="help-icon" style={{position: 'static'}} onClick={() => setShowHowToPlay(true)}>
+            <HelpCircle size={24} />
+          </button>
           <div className="direction-indicator">
             {turnDirection === 1 ? '➡️ Clockwise' : '⬅️ Counter-Clockwise'}
           </div>
@@ -481,6 +488,39 @@ const Home: React.FC = () => {
                 else setGameState('SETUP');
             }}>Main Lagi</button>
             {mode === 'ONLINE' && <button className="secondary" style={{marginTop: '10px'}} onClick={() => { socket.disconnect(); setGameState('SETUP'); setMode(null); }}>Keluar</button>}
+          </div>
+        </div>
+      )}
+
+      {showHowToPlay && (
+        <div className="modal-overlay">
+          <div className="modal-content how-to-play-modal">
+            <h2>Cara Bermain Game Cepe</h2>
+            <div className="how-to-play-content">
+              <h3>Tujuan</h3>
+              <p>Mencapai angka <strong>100</strong> tanpa melebihinya!</p>
+              
+              <h3>Aturan Main</h3>
+              <ul>
+                <li>Setiap pemain mendapatkan 2 kartu di awal.</li>
+                <li>Pada giliranmu, pilih kartu untuk dimainkan (<strong>Play</strong>) atau dibuang (<strong>Discard</strong>).</li>
+                <li><strong>Play:</strong> Tambahkan angka kartu ke total akumulasi dan ambil kartu baru dari deck.</li>
+                <li><strong>Discard:</strong> Jika kartu membuat total > 100, buang kartu tersebut <strong>tanpa mengambil kartu baru</strong>.</li>
+                <li>Pemain yang kehabisan kartu dianggap <strong>OUT</strong>.</li>
+                <li>Pemain terakhir yang bertahan adalah pemenangnya!</li>
+              </ul>
+
+              <h3>Kartu Spesial</h3>
+              <ul className="special-cards-list">
+                <li><strong>A:</strong> +1 atau -1</li>
+                <li><strong>J:</strong> +10 atau -10</li>
+                <li><strong>Q:</strong> +20 atau -20</li>
+                <li><strong>K:</strong> Total langsung menjadi <strong>100</strong>!</li>
+                <li><strong>4:</strong> Balik arah giliran.</li>
+                <li><strong>7:</strong> Pilih pemain berikutnya.</li>
+              </ul>
+            </div>
+            <button className="primary" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowHowToPlay(false)}>Tutup</button>
           </div>
         </div>
       )}

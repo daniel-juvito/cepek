@@ -1,0 +1,9 @@
+node_modules
+.next
+dist
+*.log
+.git
+.gitignore
+Dockerfile
+.dockerignore
+.DS_Store

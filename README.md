@@ -3,7 +3,7 @@
 Game kartu seru asal Indonesia di mana tujuan utamanya adalah mencapai angka **100** tanpa melebihinya! Sekarang hadir dengan antarmuka web modern, mode Bot, dan Online Multiplayer.
 
 ## 🚀 Fitur Utama
-- **Web UI (React + Vite)**: Tampilan visual kartu yang menarik dan interaktif.
+- **Web UI (Next.js)**: Tampilan visual kartu yang menarik dan interaktif dengan dukungan SSR.
 - **Online Multiplayer**: Main bareng teman secara real-time menggunakan Socket.io.
 - **Local Pass-and-Play**: Main berdua atau lebih dalam satu perangkat dengan layar transisi privasi.
 - **Bot AI**: Tantang bot cerdas dalam mode lokal.
@@ -31,32 +31,38 @@ Game kartu seru asal Indonesia di mana tujuan utamanya adalah mencapai angka **1
 Pastikan kamu sudah menginstal [Node.js](https://nodejs.org/).
 
 1. **Clone repository ini** (atau download foldernya).
-2. **Instal dependensi** di folder utama:
+2. **Instal dependensi**:
    ```bash
    npm install
-   ```
-3. **Instal dependensi server**:
-   ```bash
-   cd server
-   npm install
-   cd ..
    ```
 
 ### Menjalankan Game (Rekomendasi)
 Untuk menjalankan versi UI lengkap (Frontend & Backend tersambung), gunakan perintah:
 ```bash
-npm run full-start
+npm run dev
 ```
-Buka browser dan akses: `http://localhost:3001`
+Buka browser dan akses: `http://localhost:3000`
+
+### Docker (Rekomendasi untuk Produksi)
+Kamu bisa menjalankan game ini menggunakan Docker agar lebih praktis:
+1. **Build image**:
+   ```bash
+   docker build -t game-cepe .
+   ```
+2. **Jalankan kontainer**:
+   ```bash
+   docker run -p 3000:3000 game-cepe
+   ```
+Akses game di `http://localhost:3000`.
 
 ### Perintah Lainnya
-- **Mode Development (Frontend)**: `npm run dev` (di folder utama)
-- **Mode Development (Server)**: `npm run server-dev` (di folder utama)
-- **Mode Terminal**: `npm start` (di folder utama)
+- **Mode Development**: `npm run dev` (di folder utama)
+- **Mode Terminal**: `npm run terminal` (di folder utama)
 
 ## 🏗️ Teknologi yang Digunakan
-- **Frontend**: React, Vite, Lucide React, Socket.io-client.
-- **Backend**: Node.js, Express, Socket.io.
+- **Web Framework**: Next.js.
+- **Backend Server**: Node.js, Express, Socket.io.
+- **UI Components**: Lucide React.
 - **Bahasa**: TypeScript.
 
 ---

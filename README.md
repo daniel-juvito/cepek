@@ -79,7 +79,8 @@ Platform ini otomatis mendeteksi Dockerfile:
 - Hubungkan akun GitHub ke [Railway.app](https://railway.app) atau [Render.com](https://render.com).
 - Pilih project `cepek`.
 - Set environment variable `PORT=3000` (jika diperlukan).
-- Deploy! Platform akan memberikan URL publik (misal: `game-cepe.up.railway.app`).
+- Deploy! Platform akan memberikan URL publik.
+- **URL Produksi Resmi**: [https://cepek-production.up.railway.app/](https://cepek-production.up.railway.app/)
 
 ### 3. Penting: Vercel (Layanan Gratis Terpopuler)
 **Catatan Penting**: Vercel secara default **tidak mendukung** WebSocket/Socket.io secara permanen (Serverless). Jadi, game online tidak akan jalan jika di-deploy ke Vercel biasa. Gunakan cara 1 atau 2 di atas agar fitur online lancar.
@@ -93,6 +94,25 @@ Platform ini otomatis mendeteksi Dockerfile:
 - **Backend Server**: Node.js, Express, Socket.io.
 - **UI Components**: Lucide React.
 - **Bahasa**: TypeScript.
+
+---
+## 📱 Mobile & Desktop App
+
+### 1. Android (APK)
+Kamu bisa membuat file APK untuk diinstal di HP Android:
+- **Prasyarat**: Sudah menginstal **Android SDK** (bisa didapat dengan menginstal Android Studio sekali).
+- **Cara Build (Terminal)**:
+  ```bash
+  npm run android-apk
+  ```
+- **Hasil**: File APK akan berada di `android/app/build/outputs/apk/debug/app-debug.apk`.
+- **Cara Alternatif**: Gunakan `npm run android-open` untuk membuka proyek di **Android Studio** dan build dari sana.
+
+### 2. Desktop (Windows/Mac/Linux)
+Aplikasi bisa dijalankan sebagai aplikasi desktop (.exe):
+- **Jalankan Mode Dev**: `npm run electron-dev`
+- **Build Executable**: `npm run electron-pack`
+- **Hasil**: Cek folder `dist-electron`.
 
 ---
 Selamat bermain! Jangan sampai lewat 100 ya! 🚀😉

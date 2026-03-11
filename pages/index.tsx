@@ -43,7 +43,8 @@ const Home: React.FC = () => {
   }, [logs]);
 
   useEffect(() => {
-    socket = io({ autoConnect: false });
+    const socketUrl = process.env.NEXT_PUBLIC_SOCKET_URL || 'https://cepek-production.up.railway.app/';
+    socket = io(socketUrl, { autoConnect: false });
 
     socket.on('connect', () => {
       setMyId(socket.id || '');

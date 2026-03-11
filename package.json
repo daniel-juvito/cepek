@@ -2,15 +2,41 @@
   "name": "cepek",
   "version": "1.0.0",
   "description": "",
-  "main": "dist/index.js",
+  "main": "main.js",
   "scripts": {
     "dev": "ts-node server.ts",
     "build": "next build && npx tsc server.ts --outDir dist --esModuleInterop --module commonjs --target es2016 --skipLibCheck",
     "start": "NODE_ENV=production node dist/server.js",
     "terminal": "ts-node src/index.ts",
-    "test": "vitest run"
+    "test": "vitest run",
+    "electron-dev": "electron .",
+    "electron-pack": "npm run build && electron-builder",
+    "android-build": "next build && npx cap sync android",
+    "android-open": "npx cap open android",
+    "android-apk": "next build && npx cap sync android && cd android && ./gradlew assembleDebug"
+  },
+  "build": {
+    "appId": "com.danieljuvito.cepek",
+    "productName": "Cepek Card Game",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "main.js",
+      ".next/**/*",
+      "dist/**/*",
+      "node_modules/**/*",
+      "public/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": "portable"
+    }
   },
   "devDependencies": {
+    "@capacitor/android": "^8.2.0",
+    "@capacitor/cli": "^8.2.0",
+    "@capacitor/core": "^8.2.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.4.0",
@@ -18,6 +44,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.1.4",
     "@vitest/ui": "^4.0.18",
+    "electron": "^41.0.0",
+    "electron-builder": "^26.8.1",
+    "electron-is-dev": "^3.0.1",
     "lucide-react": "^0.577.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.9.3",

@@ -1,0 +1,92 @@
+# Security Checklist
+
+This checklist helps ensure secure development practices for the Cepek card game.
+
+---
+
+# Application Security
+
+## Input Validation
+
+- [ ] Validate all user inputs
+- [ ] Validate game configuration values
+- [ ] Enforce bot count limits
+- [ ] Reject malformed requests
+
+---
+
+## Authentication
+
+- [ ] Use secure session tokens
+- [ ] Prevent session fixation
+- [ ] Implement session expiration
+- [ ] Protect session cookies
+
+---
+
+## Authorization
+
+- [ ] Ensure players can only access their own game rooms
+- [ ] Prevent unauthorized game actions
+- [ ] Validate player identity on each request
+
+---
+
+# Game Logic Security
+
+- [ ] Validate game actions server-side
+- [ ] Prevent client manipulation
+- [ ] Validate card distribution logic
+- [ ] Ensure fair gameplay rules
+
+---
+
+# API Security
+
+- [ ] Validate request payloads
+- [ ] Implement rate limiting
+- [ ] Protect sensitive endpoints
+- [ ] Handle errors securely
+
+---
+
+# Dependency Security
+
+- [ ] Run dependency audits regularly
+- [ ] Update outdated packages
+- [ ] Monitor vulnerability alerts
+
+Recommended tools:
+
+- npm audit
+- GitHub Dependabot
+
+---
+
+# Secret Management
+
+Never commit:
+
+- [ ] API keys
+- [ ] database credentials
+- [ ] private keys
+- [ ] environment files
+
+Use environment variables instead.
+
+---
+
+# Logging & Monitoring
+
+- [ ] Log suspicious activities
+- [ ] Monitor authentication failures
+- [ ] Monitor abnormal traffic patterns
+
+---
+
+# Deployment Security
+
+- [ ] Use HTTPS
+- [ ] Protect production environment
+- [ ] Restrict admin access
+- [ ] Monitor application uptime

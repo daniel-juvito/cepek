@@ -2,6 +2,7 @@ import { Server } from 'socket.io';
 import { createServer } from 'http';
 import express from 'express';
 import next from 'next';
+import rateLimit from 'express-rate-limit';
 
 const dev = process.env.NODE_ENV !== 'production';
 const app = next({ dev });
@@ -77,6 +78,16 @@ function createDeck(): Card[] {
 
 app.prepare().then(() => {
   const server = express();
+  
+  // Rate limiting to prevent abuse
+  const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100, // limit each IP to 100 requests per windowMs
+    message: 'Terlalu banyak permintaan dari IP ini, silakan coba lagi nanti.'
+  });
+  
+  server.use(limiter);
+
   const httpServer = createServer(server);
   const io = new Server(httpServer);
 

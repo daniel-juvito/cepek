@@ -8,9 +8,9 @@ This checklist helps ensure secure development practices for the Cepek card game
 
 ## Input Validation
 
-- [ ] Validate all user inputs
-- [ ] Validate game configuration values
-- [ ] Enforce bot count limits
+- [x] Validate all user inputs
+- [x] Validate game configuration values
+- [x] Enforce bot count limits
 - [ ] Reject malformed requests
 
 ---
@@ -44,9 +44,9 @@ This checklist helps ensure secure development practices for the Cepek card game
 # API Security
 
 - [ ] Validate request payloads
-- [ ] Implement rate limiting
+- [x] Implement rate limiting
 - [ ] Protect sensitive endpoints
-- [ ] Handle errors securely
+- [x] Handle errors securely
 
 ---
 

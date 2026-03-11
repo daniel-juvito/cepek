@@ -45,13 +45,15 @@ Testing categories included:
 
 ## Finding 1: Bot Limit Validation Missing
 
-Severity: Medium
+Severity: Medium (RESOLVED)
 
 Description:
 
 The application allows users to attempt to configure more than the allowed number of bots.
 
 When the bot value exceeds the allowed limit, the system throws an error instead of properly preventing the action.
+
+Status: FIXED. Frontend and backend validation added. Limit enforced at 10 bots.
 
 Impact:
 
@@ -67,12 +69,12 @@ Implement both frontend and backend validation to enforce the maximum allowed bo
 
 # Risk Rating
 
-| Severity | Count |
-|--------|-------|
-| Critical | 0 |
-| High | 0 |
-| Medium | 1 |
-| Low | 0 |
+| Severity | Count | Status |
+|--------|-------|--------|
+| Critical | 0 | - |
+| High | 0 | - |
+| Medium | 1 | RESOLVED |
+| Low | 0 | - |
 
 ---
 

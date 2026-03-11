@@ -160,7 +160,10 @@ app.prepare().then(() => {
       if (!room || room.gameState !== 'PLAYING') return;
 
       const player = room.players[room.currentPlayerIndex];
-      if (player.id !== socket.id) return;
+      if (player.id !== socket.id || player.isOut) return;
+
+      // Validasi kepemilikan kartu
+      if (!player.hand[cardIndex]) return;
 
       const card = player.hand[cardIndex];
       room.discardPile.push(card);
@@ -241,7 +244,10 @@ app.prepare().then(() => {
       const room = rooms.get(roomId);
       if (!room || room.gameState !== 'PLAYING') return;
       const player = room.players[room.currentPlayerIndex];
-      if (player.id !== socket.id) return;
+      if (player.id !== socket.id || player.isOut) return;
+
+      // Validasi kepemilikan kartu
+      if (!player.hand[cardIndex]) return;
 
       const discarded = player.hand.splice(cardIndex, 1)[0];
       room.discardPile.push(discarded);

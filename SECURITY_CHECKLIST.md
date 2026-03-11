@@ -34,8 +34,8 @@ This checklist helps ensure secure development practices for the Cepek card game
 
 # Game Logic Security
 
-- [ ] Validate game actions server-side
-- [ ] Prevent client manipulation
+- [x] Validate game actions server-side
+- [x] Prevent client manipulation
 - [ ] Validate card distribution logic
 - [ ] Ensure fair gameplay rules
 
@@ -43,7 +43,7 @@ This checklist helps ensure secure development practices for the Cepek card game
 
 # API Security
 
-- [ ] Validate request payloads
+- [x] Validate request payloads
 - [x] Implement rate limiting
 - [ ] Protect sensitive endpoints
 - [x] Handle errors securely

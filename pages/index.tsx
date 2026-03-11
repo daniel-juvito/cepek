@@ -1,15 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
-import { ArrowLeftRight, HelpCircle, Trophy, Users, User, Globe } from 'lucide-react';
+import { Globe, HelpCircle, Trophy, User } from 'lucide-react';
 import { io, Socket } from 'socket.io-client';
+import { calculateNewTotal, Card, createDeck, reshuffleIfNeeded, shuffleDeck } from '../utils/gameLogic';
 
 let socket: Socket;
-
-interface Card {
-  name: string;
-  value: number;
-  rank: string;
-}
 
 interface Player {
   id: string;
@@ -25,6 +20,7 @@ const Home: React.FC = () => {
   
   const [numHumans, setNumHumans] = useState(1);
   const [numBots, setNumBots] = useState(1);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [roomId, setRoomId] = useState('');
   const [playerName, setPlayerName] = useState('');
   
@@ -33,12 +29,13 @@ const Home: React.FC = () => {
   const [currentPlayerIndex, setCurrentPlayerIndex] = useState(0);
   const [turnDirection, setTurnDirection] = useState(1);
   const [logs, setLogs] = useState<string[]>([]);
-  const [specialChoice, setSpecialChoice] = useState<{ card: Card; type: 'ADJ' | '7' } | null>(null);
+  const [specialChoice, setSpecialChoice] = useState<{ card: Card; type: 'ADJ' | '7' | 'JOKER'; jokerStep?: 'RANK' | 'EFFECT' } | null>(null);
   const [winner, setWinner] = useState<Player | null>(null);
   const [showPassScreen, setShowPassScreen] = useState(false);
   const [showHowToPlay, setShowHowToPlay] = useState(false);
   const logEndRef = useRef<HTMLDivElement>(null);
   const [deckCards, setDeckCards] = useState<Card[]>([]);
+  const [discardPile, setDiscardPile] = useState<Card[]>([]);
   const [myId, setMyId] = useState<string>('');
 
   useEffect(() => {
@@ -78,26 +75,7 @@ const Home: React.FC = () => {
   };
 
   const initLocalGame = () => {
-    const suits = ['♠', '♥', '♦', '♣'];
-    const values = [
-      { name: 'A', value: 1, rank: 'A' }, { name: '2', value: 2, rank: '2' },
-      { name: '3', value: 3, rank: '3' }, { name: '4', value: 0, rank: '4' },
-      { name: '5', value: 5, rank: '5' }, { name: '6', value: 6, rank: '6' },
-      { name: '7', value: 0, rank: '7' }, { name: '8', value: 8, rank: '8' },
-      { name: '9', value: 9, rank: '9' }, { name: '10', value: 10, rank: '10' },
-      { name: 'J', value: 10, rank: 'J' }, { name: 'Q', value: 20, rank: 'Q' },
-      { name: 'K', value: 0, rank: 'K' }
-    ];
-    let newDeck: Card[] = [];
-    for (const suit of suits) {
-      for (const val of values) {
-        newDeck.push({ name: `${val.name}${suit}`, value: val.value, rank: val.rank });
-      }
-    }
-    for (let i = newDeck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [newDeck[i], newDeck[j]] = [newDeck[j], newDeck[i]];
-    }
+    let newDeck = shuffleDeck(createDeck());
 
     const initialPlayers: Player[] = [];
     for (let i = 0; i < numHumans; i++) {
@@ -109,6 +87,7 @@ const Home: React.FC = () => {
 
     setPlayers(initialPlayers);
     setDeckCards(newDeck);
+    setDiscardPile([]);
     setAccumulatedTotal(0);
     setCurrentPlayerIndex(0);
     setTurnDirection(1);
@@ -132,59 +111,64 @@ const Home: React.FC = () => {
       nextIndex = (nextIndex + turnDirection + players.length) % players.length;
     }
     
-    if (!players[nextIndex].isBot && players.filter(p => !p.isBot).length > 1) {
+    if (!players[nextIndex].isBot && (players.filter(p => !p.isBot).length > 1 || players.some(p => p.isBot))) {
       setShowPassScreen(true);
     }
     setCurrentPlayerIndex(nextIndex);
   };
 
-  const playCardLocal = (playerIndex: number, cardIndex: number, choiceValue?: number, targetPlayerId?: string) => {
+  const playCardLocal = (playerIndex: number, cardIndex: number, choiceValue?: number, targetPlayerId?: string, jokerRank?: string) => {
     const newPlayers = [...players];
     const player = newPlayers[playerIndex];
     const card = player.hand[cardIndex];
     
-    addLog(`${player.name} memainkan ${card.name}`);
+    addLog(`${player.name} memainkan ${card.name}${jokerRank ? ` sebagai ${jokerRank}` : ''}`);
 
-    let newTotal = accumulatedTotal;
-    let effectApplied = false;
+    let effectiveCard = card;
+    if (card.rank === 'Joker' && jokerRank) {
+      effectiveCard = { ...card, rank: jokerRank };
+    }
 
-    if (card.rank === 'A' || card.rank === 'J' || card.rank === 'Q') {
+    const newTotal = calculateNewTotal(accumulatedTotal, effectiveCard, choiceValue);
+    
+    if (effectiveCard.rank === 'A' || effectiveCard.rank === 'J' || effectiveCard.rank === 'Q') {
       if (choiceValue !== undefined) {
-        newTotal = Math.min(100, Math.max(0, newTotal + choiceValue));
         addLog(`${player.name} memilih ${choiceValue > 0 ? '+' : ''}${choiceValue}`);
-        effectApplied = true;
       } else {
-        setSpecialChoice({ card, type: 'ADJ' });
+        setSpecialChoice({ card, type: card.rank === 'Joker' ? 'JOKER' : 'ADJ', jokerStep: card.rank === 'Joker' ? 'EFFECT' : undefined });
         return;
       }
-    } else if (card.rank === 'K') {
-      newTotal = 100;
+    } else if (effectiveCard.rank === 'K') {
       addLog(`Total menjadi 100!`);
-      effectApplied = true;
-    } else if (card.rank === '4') {
+    } else if (effectiveCard.rank === '4') {
       setTurnDirection(prev => prev * -1);
       addLog(`Arah giliran dibalik!`);
-      effectApplied = true;
-    } else if (card.rank === '7') {
+    } else if (effectiveCard.rank === '7') {
       if (targetPlayerId !== undefined) {
         addLog(`${player.name} memilih ${players.find(p => p.id === targetPlayerId)?.name} sebagai pemain berikutnya.`);
-        effectApplied = true;
       } else {
-        setSpecialChoice({ card, type: '7' });
+        setSpecialChoice({ card, type: card.rank === 'Joker' ? 'JOKER' : '7', jokerStep: card.rank === 'Joker' ? 'EFFECT' : undefined });
         return;
       }
+    } else if (card.rank === 'Joker' && !jokerRank) {
+      setSpecialChoice({ card, type: 'JOKER', jokerStep: 'RANK' });
+      return;
     }
-
-    if (!effectApplied) newTotal = Math.min(100, newTotal + card.value);
 
     setAccumulatedTotal(newTotal);
-    player.hand.splice(cardIndex, 1);
+    const playedCard = player.hand.splice(cardIndex, 1)[0];
+    const newDiscardPile = [...discardPile, playedCard];
     
-    if (deckCards.length > 0) {
-        const nextDeck = [...deckCards];
-        player.hand.push(nextDeck.pop()!);
-        setDeckCards(nextDeck);
+    let { newDeck, newDiscardPile: updatedDiscard, reshuffled } = reshuffleIfNeeded(deckCards, newDiscardPile);
+    if (reshuffled) {
+      addLog("Deck habis! Mengocok ulang kartu buangan...");
     }
+
+    if (newDeck.length > 0) {
+      player.hand.push(newDeck.pop()!);
+    }
+    setDeckCards(newDeck);
+    setDiscardPile(updatedDiscard);
 
     setPlayers(newPlayers);
     setSpecialChoice(null);
@@ -203,6 +187,10 @@ const Home: React.FC = () => {
     const player = newPlayers[playerIndex];
     const discarded = player.hand.splice(cardIndex, 1)[0];
     addLog(`${player.name} membuang ${discarded.name}.`);
+
+    const newDiscardPile = [...discardPile, discarded];
+    setDiscardPile(newDiscardPile);
+
     if (player.hand.length === 0) {
       player.isOut = true;
       addLog(`${player.name} keluar!`);
@@ -221,8 +209,8 @@ const Home: React.FC = () => {
     socket.emit('start_game', roomId);
   };
 
-  const playCardOnline = (cardIndex: number, choiceValue?: number, targetPlayerId?: string) => {
-    socket.emit('play_card', { roomId, cardIndex, choiceValue, targetPlayerId });
+  const playCardOnline = (cardIndex: number, choiceValue?: number, targetPlayerId?: string, jokerRank?: string) => {
+    socket.emit('play_card', { roomId, cardIndex, choiceValue, targetPlayerId, jokerRank });
     setSpecialChoice(null);
   };
 
@@ -235,7 +223,7 @@ const Home: React.FC = () => {
       const timer = setTimeout(() => {
         const player = players[currentPlayerIndex];
         const playableCards = player.hand.filter(c => {
-          if (['4', '7', 'K'].includes(c.rank)) return true;
+          if (['4', '7', 'K', 'Joker'].includes(c.rank)) return true;
           if (c.rank === 'A') return accumulatedTotal + 1 <= 100 || accumulatedTotal - 1 <= 100;
           if (c.rank === 'J') return accumulatedTotal + 10 <= 100 || accumulatedTotal - 10 <= 100;
           if (c.rank === 'Q') return accumulatedTotal + 20 <= 100 || accumulatedTotal - 20 <= 100;
@@ -248,15 +236,23 @@ const Home: React.FC = () => {
           let selectedCard = playableCards[0];
           let choice: number | undefined;
           let target: string | undefined;
+          let jokerRank: string | undefined;
 
-          if (selectedCard.rank === 'A' || selectedCard.rank === 'J' || selectedCard.rank === 'Q') {
-            const val = selectedCard.rank === 'A' ? 1 : (selectedCard.rank === 'J' ? 10 : 20);
+          if (selectedCard.rank === 'Joker') {
+            // Bot milih K kalau bisa (instawin/setting total ke 100)
+            jokerRank = 'K';
+          }
+
+          const effectiveRank = jokerRank || selectedCard.rank;
+
+          if (effectiveRank === 'A' || effectiveRank === 'J' || effectiveRank === 'Q') {
+            const val = effectiveRank === 'A' ? 1 : (effectiveRank === 'J' ? 10 : 20);
             choice = (accumulatedTotal + val <= 100) ? val : -val;
-          } else if (selectedCard.rank === '7') {
+          } else if (effectiveRank === '7') {
             const others = players.filter(p => !p.isOut && p.id !== player.id);
             target = others[Math.floor(Math.random() * others.length)].id;
           }
-          playCardLocal(currentPlayerIndex, player.hand.indexOf(selectedCard), choice, target);
+          playCardLocal(currentPlayerIndex, player.hand.indexOf(selectedCard), choice, target, jokerRank);
         }
       }, 1500);
       return () => clearTimeout(timer);
@@ -265,11 +261,16 @@ const Home: React.FC = () => {
 
   const handlePlay = (idx: number, cIdx: number) => {
     const card = players[idx].hand[cIdx];
-    const canPlay = (['4', '7', 'K'].includes(card.rank)) || 
+    const canPlay = (['4', '7', 'K', 'Joker'].includes(card.rank)) || 
                   (card.rank === 'A' && (accumulatedTotal + 1 <= 100 || accumulatedTotal - 1 <= 100)) ||
                   (card.rank === 'J' && (accumulatedTotal + 10 <= 100 || accumulatedTotal - 10 <= 100)) ||
                   (card.rank === 'Q' && (accumulatedTotal + 20 <= 100 || accumulatedTotal - 20 <= 100)) ||
                   (accumulatedTotal + card.value <= 100);
+    
+    if (card.rank === 'Joker') {
+      setSpecialChoice({ card, type: 'JOKER', jokerStep: 'RANK' });
+      return;
+    }
     
     if (card.rank === 'A' || card.rank === 'J' || card.rank === 'Q') {
       const val = card.rank === 'A' ? 1 : (card.rank === 'J' ? 10 : 20);
@@ -312,20 +313,57 @@ const Home: React.FC = () => {
   }
 
   if (mode === 'LOCAL' && gameState === 'SETUP') {
+    const MAX_LOCAL_PLAYERS = 10;
     return (
         <div className="setup-screen">
           <div className="setup-form">
             <h2>Setup Game Lokal</h2>
+            {errorMsg && <div style={{color: '#ff4d4d', marginBottom: '10px', fontSize: '0.9rem'}}>{errorMsg}</div>}
             <div>
               <label>Human Players: </label>
-              <input type="number" value={numHumans} min="1" max="4" onChange={e => setNumHumans(parseInt(e.target.value))} />
+              <input type="number" value={numHumans} min="1" max={MAX_LOCAL_PLAYERS - numBots} onChange={e => {
+                const val = parseInt(e.target.value) || 0;
+                if (val > MAX_LOCAL_PLAYERS) {
+                  setErrorMsg(`Maksimal ${MAX_LOCAL_PLAYERS} pemain.`);
+                  return;
+                }
+                if (val + numBots <= MAX_LOCAL_PLAYERS) {
+                  setNumHumans(val);
+                  setErrorMsg(null);
+                } else {
+                  setErrorMsg(`Total pemain tidak boleh lebih dari ${MAX_LOCAL_PLAYERS}.`);
+                }
+              }} />
             </div>
             <div>
               <label>Bot Players: </label>
-              <input type="number" value={numBots} min="0" max="4" onChange={e => setNumBots(parseInt(e.target.value))} />
+              <input type="number" value={numBots} min="0" max={MAX_LOCAL_PLAYERS - numHumans} onChange={e => {
+                const val = parseInt(e.target.value) || 0;
+                if (val > 10) {
+                  setErrorMsg("Maksimal bot yang diizinkan adalah 10.");
+                  return;
+                }
+                if (val + numHumans <= MAX_LOCAL_PLAYERS) {
+                  setNumBots(val);
+                  setErrorMsg(null);
+                } else {
+                  setErrorMsg(`Total pemain tidak boleh lebih dari ${MAX_LOCAL_PLAYERS}.`);
+                }
+              }} />
             </div>
-            <button className="primary" style={{marginTop: '20px', width: '100%'}} onClick={initLocalGame}>Mulai Permainan</button>
-            <button className="secondary" style={{marginTop: '10px', width: '100%'}} onClick={() => setMode(null)}>Kembali</button>
+            <p style={{fontSize: '0.8rem', color: '#888', marginTop: '10px'}}>Maksimal {MAX_LOCAL_PLAYERS} pemain (Max 10 Bot)</p>
+            <button className="primary" style={{marginTop: '20px', width: '100%'}} onClick={() => {
+              if (numHumans + numBots < 2) {
+                setErrorMsg('Minimal 2 pemain untuk memulai!');
+                return;
+              }
+              if (numBots > 10) {
+                setErrorMsg("Maksimal bot yang diizinkan adalah 10.");
+                return;
+              }
+              initLocalGame();
+            }}>Mulai Permainan</button>
+            <button className="secondary" style={{marginTop: '10px', width: '100%'}} onClick={() => { setMode(null); setErrorMsg(null); }}>Kembali</button>
           </div>
         </div>
       );
@@ -352,6 +390,7 @@ const Home: React.FC = () => {
   }
 
   if (mode === 'ONLINE' && gameState === 'LOBBY') {
+    const MAX_ONLINE_PLAYERS = 10;
     return (
         <div className="setup-screen">
           <div className="setup-form">
@@ -359,9 +398,9 @@ const Home: React.FC = () => {
             <div className="player-list">
                 {players.map(p => <div key={p.id} className="player-list-item">{p.name} {p.id === myId ? '(You)' : ''}</div>)}
             </div>
-            <p style={{fontSize: '0.8rem', color: '#888', margin: '10px 0'}}>Menunggu pemain lain... (Min 2)</p>
-            {players.length >= 2 && <button className="primary" style={{width: '100%'}} onClick={startOnlineGame}>Mulai Game</button>}
-            <button className="secondary" style={{marginTop: '10px', width: '100%'}} onClick={() => { socket.disconnect(); setGameState('SETUP'); setMode(null); }}>Keluar</button>
+            <p style={{fontSize: '0.8rem', color: '#888', margin: '10px 0'}}>Menunggu pemain lain... (Min 2, Maks {MAX_ONLINE_PLAYERS})</p>
+            {players.length >= 2 && players.length <= MAX_ONLINE_PLAYERS && <button className="primary" style={{width: '100%'}} onClick={startOnlineGame}>Mulai Game</button>}
+            <button className="secondary" style={{marginTop: '10px', width: '100%'}} onClick={() => { socket.disconnect(); setGameState('SETUP'); setMode(null); setErrorMsg(null); }}>Keluar</button>
           </div>
         </div>
     );
@@ -415,14 +454,14 @@ const Home: React.FC = () => {
                 {p.isOut ? <div className="out-badge">OUT</div> : (
                 <div className="hand">
                     {p.hand.map((card, cIdx) => {
-                    const isVisible = isMe && (mode === 'LOCAL' ? isActive : true);
+                    const isVisible = isMe && !p.isBot && (mode === 'LOCAL' ? isActive : true);
                     return (
                         <div 
                         key={cIdx} 
                         className={`card ${['♥','♦'].includes(card.name.slice(-1)) ? 'red' : ''} ${(!isMyTurn || !isActive) ? 'disabled' : ''} ${!isVisible ? 'back' : ''}`}
                         onClick={() => isMyTurn && isActive && handlePlay(idx, cIdx)}
                         >
-                        {isVisible ? card.name : '?'}
+                        {isVisible ? card.name : (p.isBot ? '🤖' : '?')}
                         </div>
                     );
                     })}
@@ -441,39 +480,57 @@ const Home: React.FC = () => {
       {specialChoice && (
         <div className="modal-overlay">
           <div className="modal-content">
-            {specialChoice.type === 'ADJ' ? (
+            {specialChoice.type === 'JOKER' && specialChoice.jokerStep === 'RANK' ? (
               <>
-                <h2>Pilih Efek {specialChoice.card.rank}</h2>
-                <div className="modal-buttons">
-                  <button onClick={() => {
-                    const val = specialChoice.card.rank === 'A' ? 1 : (specialChoice.card.rank === 'J' ? 10 : 20);
-                    if (accumulatedTotal + val <= 100) {
-                        if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), val);
-                        else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), val);
-                    }
-                  }} disabled={accumulatedTotal + (specialChoice.card.rank === 'A' ? 1 : (specialChoice.card.rank === 'J' ? 10 : 20)) > 100}>
-                    +{specialChoice.card.rank === 'A' ? 1 : (specialChoice.card.rank === 'J' ? 10 : 20)}
-                  </button>
-                  <button onClick={() => {
-                    const val = specialChoice.card.rank === 'A' ? -1 : (specialChoice.card.rank === 'J' ? -10 : -20);
-                    if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), val);
-                    else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), val);
-                  }}>-{specialChoice.card.rank === 'A' ? 1 : (specialChoice.card.rank === 'J' ? 10 : 20)}</button>
+                <h2>Joker: Pilih Efek Kartu</h2>
+                <div className="modal-buttons flex-wrap">
+                  {['A', 'J', 'Q', 'K', '4', '7'].map(r => (
+                    <button key={r} onClick={() => {
+                      if (['A', 'J', 'Q', '7'].includes(r)) {
+                        setSpecialChoice({ ...specialChoice, jokerStep: 'EFFECT', jokerRank: r } as any);
+                      } else {
+                        if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, undefined, r);
+                        else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, undefined, r);
+                      }
+                    }}>{r}</button>
+                  ))}
                 </div>
               </>
-            ) : (
+            ) : specialChoice.type === 'ADJ' || (specialChoice.type === 'JOKER' && ['A', 'J', 'Q'].includes((specialChoice as any).jokerRank)) ? (
+              <>
+                <h2>Pilih Efek {(specialChoice as any).jokerRank || specialChoice.card.rank}</h2>
+                <div className="modal-buttons">
+                  <button onClick={() => {
+                    const rank = (specialChoice as any).jokerRank || specialChoice.card.rank;
+                    const val = rank === 'A' ? 1 : (rank === 'J' ? 10 : 20);
+                    if (accumulatedTotal + val <= 100) {
+                        if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), val, undefined, (specialChoice as any).jokerRank);
+                        else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), val, undefined, (specialChoice as any).jokerRank);
+                    }
+                  }} disabled={accumulatedTotal + (((specialChoice as any).jokerRank || specialChoice.card.rank) === 'A' ? 1 : (((specialChoice as any).jokerRank || specialChoice.card.rank) === 'J' ? 10 : 20)) > 100}>
+                    +{(specialChoice as any).jokerRank || specialChoice.card.rank === 'A' ? 1 : ((specialChoice as any).jokerRank || specialChoice.card.rank === 'J' ? 10 : 20)}
+                  </button>
+                  <button onClick={() => {
+                    const rank = (specialChoice as any).jokerRank || specialChoice.card.rank;
+                    const val = rank === 'A' ? -1 : (rank === 'J' ? -10 : -20);
+                    if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), val, undefined, (specialChoice as any).jokerRank);
+                    else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), val, undefined, (specialChoice as any).jokerRank);
+                  }}>-{(specialChoice as any).jokerRank || specialChoice.card.rank === 'A' ? 1 : ((specialChoice as any).jokerRank || specialChoice.card.rank === 'J' ? 10 : 20)}</button>
+                </div>
+              </>
+            ) : specialChoice.type === '7' || (specialChoice.type === 'JOKER' && (specialChoice as any).jokerRank === '7') ? (
               <>
                 <h2>Pilih Pemain Berikutnya</h2>
                 <div className="modal-buttons">
                   {players.filter(p => !p.isOut && p.id !== currentPlayer.id).map(p => (
                     <button key={p.id} onClick={() => {
-                      if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, p.id);
-                      else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, p.id);
+                      if (mode === 'LOCAL') playCardLocal(currentPlayerIndex, currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, p.id, (specialChoice as any).jokerRank);
+                      else playCardOnline(currentPlayer.hand.findIndex(c => c === specialChoice.card), undefined, p.id, (specialChoice as any).jokerRank);
                     }}>{p.name}</button>
                   ))}
                 </div>
               </>
-            )}
+            ) : null}
           </div>
         </div>
       )}
@@ -518,6 +575,7 @@ const Home: React.FC = () => {
                 <li><strong>K:</strong> Total langsung menjadi <strong>100</strong>!</li>
                 <li><strong>4:</strong> Balik arah giliran.</li>
                 <li><strong>7:</strong> Pilih pemain berikutnya.</li>
+                <li><strong>Joker:</strong> Pilih efek dari salah satu kartu spesial di atas (A, J, Q, K, 4, 7).</li>
               </ul>
             </div>
             <button className="primary" style={{marginTop: '20px', width: '100%'}} onClick={() => setShowHowToPlay(false)}>Tutup</button>
